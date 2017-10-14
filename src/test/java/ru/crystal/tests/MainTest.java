@@ -14,6 +14,7 @@ import ru.crystal.driver.WebDriverManager;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 
 public class MainTest {
@@ -22,6 +23,24 @@ public class MainTest {
     public static MailBoxPage mailBoxPage;
     public static LetterPage letterPage;
     private static Properties props = new Properties();
+
+    public static WebElement GetInputLetter( String subject, String from ) {
+        WebElement bodyDIV = driver.findElement(By.className("b-datalist__body"));
+        List<WebElement> inputLetters = bodyDIV.findElements(By.tagName("a"));
+        WebElement letter = null;
+        for( WebElement item : inputLetters ) {
+            String letterSubject = item.getAttribute( "data-subject" );
+            WebElement rootDIV = item.findElement(By.className("b-datalist__item__pic"));
+            String style = rootDIV.getAttribute("style");
+            String letterFrom = style.substring(style.indexOf("&email")+7, style.indexOf("&trust"));
+            if( letterSubject.equals( subject ) && letterFrom.equals( from ) ) {
+                letter = driver.findElement(By.xpath("//a[@href='"+item.getAttribute("href")+"']"));
+                break;
+            }
+        }
+
+        return letter;
+    }
 
     @BeforeClass
     public static void Setup() {
@@ -39,8 +58,18 @@ public class MainTest {
             loginPage.Login( login, pass );
 
             mailBoxPage.ClickInbox();
-            WebElement first = driver.findElement(By.xpath("//a[@href='https://e.mail.ru/message/15079969930000000338/']"));
-            first.click();
+
+            props.loadFromXML( new FileInputStream( "./src/test/resources/test.xml" ) );
+            String subject = String.valueOf( props.getProperty( "subject" ) );
+            String from = String.valueOf( props.getProperty( "from" ) );
+            WebElement chosenLetter = GetInputLetter( subject, from );
+            if( chosenLetter != null )
+                chosenLetter.click();
+            else {
+                System.out.println( "Входящее письмо не найдено" );
+                Exit();
+                System.exit(1);
+            }
         }catch (Exception e) {
             e.printStackTrace();
         }
