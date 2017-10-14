@@ -25,18 +25,40 @@ public class MainTest {
     private static Properties props = new Properties();
 
     public static WebElement GetInputLetter( String subject, String from ) {
-        WebElement bodyDIV = driver.findElement(By.className("b-datalist__body"));
-        List<WebElement> inputLetters = bodyDIV.findElements(By.tagName("a"));
         WebElement letter = null;
-        for( WebElement item : inputLetters ) {
-            String letterSubject = item.getAttribute( "data-subject" );
-            WebElement rootDIV = item.findElement(By.className("b-datalist__item__pic"));
-            String style = rootDIV.getAttribute("style");
-            String letterFrom = style.substring(style.indexOf("&email")+7, style.indexOf("&trust"));
-            if( letterSubject.equals( subject ) && letterFrom.equals( from ) ) {
-                letter = driver.findElement(By.xpath("//a[@href='"+item.getAttribute("href")+"']"));
-                break;
+        boolean flag = false;
+        int pageNumber = 1;
+        while (letter == null) {
+            WebElement bodyDIV = driver.findElement(By.className("b-datalist__body"));
+            List<WebElement> inputLetters = bodyDIV.findElements(By.tagName("a"));
+            for( WebElement item : inputLetters ) {
+                String letterSubject = item.getAttribute( "data-subject" );
+                WebElement rootDIV = item.findElement(By.className("b-datalist__item__pic"));
+                String style = rootDIV.getAttribute("style");
+                String letterFrom = style.substring(style.indexOf("&email")+7, style.indexOf("&trust"));
+                if( letterSubject.equals( subject ) && letterFrom.equals( from ) ) {
+                    letter = driver.findElement(By.xpath("//a[@href='"+item.getAttribute("href")+"']"));
+                    flag = true;
+                    break;
+                }
             }
+
+            if( flag )
+                break;
+
+            int oldPageNumber = pageNumber;
+            WebElement paginator = driver.findElement(By.className("b-paginator__wrapper"));
+            List<WebElement> pages = paginator.findElements(By.tagName("a"));
+            for (WebElement item : pages) {
+                String number = item.getText();
+                if( number.equals(String.valueOf(pageNumber+1)) ) {
+                    item.click();
+                    pageNumber += 1;
+                    break;
+                }
+            }
+            if( oldPageNumber == pageNumber )
+                break;
         }
 
         return letter;
